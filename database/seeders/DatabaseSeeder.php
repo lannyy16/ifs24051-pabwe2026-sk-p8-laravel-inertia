@@ -1,0 +1,3 @@
+<?php
+namespace Database\Seeders;use Illuminate\Database\Seeder;use App\Models\User;use App\Features\Post\Models\Post;
+class DatabaseSeeder extends Seeder {public function run():void{$admin=User::firstOrCreate(['email'=>'admin@blogverse.test'],['name'=>'Administrator','password'=>bcrypt('password'),'role'=>'admin']);$writer=User::firstOrCreate(['email'=>'member@blogverse.test'],['name'=>'Penulis Demo','password'=>bcrypt('password'),'role'=>'member']);if(Post::count()===0){Post::factory()->count(5)->for($writer)->create();Post::factory()->count(2)->for($admin)->create(['is_published'=>true,'published_at'=>now()]);}}}

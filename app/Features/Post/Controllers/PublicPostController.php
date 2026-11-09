@@ -1,0 +1,4 @@
+<?php
+namespace App\Features\Post\Controllers;
+use App\Http\Controllers\Controller;use App\Features\Post\Models\Post;use Illuminate\Http\Request;use Inertia\Inertia;
+class PublicPostController extends Controller { public function index(Request $r){$posts=Post::published()->with('user:id,name')->when($r->filled('q'),fn($q)=>$q->where(fn($s)=>$s->whereRaw('LOWER(title) LIKE ?', ['%'.mb_strtolower($r->q).'%'])->orWhereRaw('LOWER(content) LIKE ?', ['%'.mb_strtolower($r->q).'%'])))->when($r->filled('category'),fn($q)=>$q->where('category',$r->category))->latest('published_at')->paginate(9)->withQueryString();return Inertia::render('Public/PostIndex',['posts'=>$posts,'filters'=>$r->only('q','category'),'categories'=>\App\Features\Post\Enums\PostCategory::values()]);} public function show(string $slug){$post=Post::published()->with('user:id,name')->where('slug',$slug)->firstOrFail();return Inertia::render('Public/PostShow',['post'=>$post]);} }

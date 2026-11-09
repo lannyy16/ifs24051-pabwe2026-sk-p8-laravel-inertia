@@ -1,0 +1,5 @@
+@import url('https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700');
+@import 'tailwindcss';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.jsx';
+:root{font-family:'Instrument Sans',sans-serif;color:#172033;background:#f7f8fc}body{margin:0}button,a{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}.prose-blog{line-height:1.85;white-space:pre-wrap}.page-shell{max-width:1180px;margin:auto;padding:2rem 1.25rem}.surface{background:white;border:1px solid #e6eaf1;border-radius:18px;box-shadow:0 8px 28px rgba(20,35,70,.05)}
