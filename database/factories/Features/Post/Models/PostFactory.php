@@ -5,7 +5,6 @@ namespace Database\Factories\Features\Post\Models;
 use App\Features\Post\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class PostFactory extends Factory
 {
@@ -14,12 +13,10 @@ class PostFactory extends Factory
     public function definition(): array
     {
         $isPublished = fake()->boolean(70);
-        $title = fake()->sentence(6);
 
         return [
             'user_id' => User::factory(),
-            'title' => $title,
-            'slug' => Str::slug($title) . '-' . fake()->unique()->numberBetween(1000, 999999),
+            'title' => fake()->sentence(6),
             'category' => fake()->randomElement([
                 'Teknologi',
                 'Pendidikan',
