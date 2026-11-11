@@ -1,13 +1,43 @@
-import Editor from '@toast-ui/editor';
-import '@toast-ui/editor/dist/toastui-editor-viewer.css';
-import React from'react';import{Head,Link}from'@inertiajs/react';import AppLayout from'../../Layouts/AppLayout';import{ArrowLeft,UserPlus}from'lucide-react';
-function MarkdownContent({ content }) {
-  const host = React.useRef(null);
-  React.useEffect(() => {
-    if (!host.current) return;
-    const viewer = Editor.factory({ viewer: true, el: host.current, initialValue: content || '', usageStatistics: false });
-    return () => viewer.destroy();
-  }, [content]);
-  return <div ref={host} className="prose-blog mt-8" />;
+import { Head, Link, usePage } from '@inertiajs/react';
+import MarkdownViewer from '../../Components/MarkdownViewer';
+import { LoginIcon, UserPlusIcon } from '../../Components/Icons';
+import { formatDate } from './PostIndex';
+
+export default function PostShow({ post, related }) {
+    const { auth } = usePage().props;
+
+    return (
+        <article className="mx-auto max-w-3xl">
+            <Head title={post.title} />
+            <Link href="/articles" className="text-sm text-indigo-600">← Semua artikel</Link>
+            <span className="mt-4 block w-fit rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">{post.category}</span>
+            <h1 className="mt-3 font-serif text-3xl font-extrabold leading-tight sm:text-4xl">{post.title}</h1>
+            <p className="mt-3 text-sm text-slate-500">Oleh <strong>{post.user?.name}</strong> · {formatDate(post.published_at)}</p>
+            {post.cover_url && <img src={post.cover_url} alt={post.title} className="mt-6 w-full rounded-2xl object-cover" />}
+            {post.excerpt && <p className="mt-6 border-l-4 border-indigo-400 pl-4 text-lg italic text-slate-600">{post.excerpt}</p>}
+            <div className="mt-6"><MarkdownViewer content={post.content} /></div>
+
+            {!auth.user && (
+                <section className="mt-12 rounded-2xl bg-indigo-50 p-6 text-center">
+                    <h2 className="text-xl font-bold text-indigo-900">Suka tulisan seperti ini?</h2>
+                    <p className="mt-1 text-sm text-indigo-800">Bergabung dengan komunitas dan bagikan ide Anda sendiri.</p>
+                    <div className="mt-4 flex justify-center gap-3">
+                        <Link href="/login" className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-medium text-indigo-700 shadow-sm"><LoginIcon /> Masuk</Link>
+                        <Link href="/register" className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white"><UserPlusIcon /> Daftar</Link>
+                    </div>
+                </section>
+            )}
+
+            {related.length > 0 && (
+                <section className="mt-12">
+                    <h2 className="mb-4 text-xl font-bold">Baca juga</h2>
+                    <ul className="space-y-3">
+                        {related.map((r) => (
+                            <li key={r.id}><Link href={`/articles/${r.slug}`} className="block rounded-lg border border-slate-200 bg-white p-4 hover:border-indigo-300"><span className="font-medium">{r.title}</span><span className="ml-2 text-xs text-slate-500">{r.category}</span></Link></li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+        </article>
+    );
 }
-export default function PostShow({post}){return <AppLayout publicPage><Head title={post.title}/><article className="max-w-4xl mx-auto px-5 py-12"><Link href="/articles" className="inline-flex gap-2 text-blue-700 font-semibold"><ArrowLeft size={18}/>Semua artikel</Link><p className="mt-10 text-blue-700 text-sm font-bold">{post.category}</p><h1 className="text-4xl md:text-5xl font-bold leading-tight mt-3">{post.title}</h1><p className="text-slate-500 mt-4">Ditulis oleh {post.user?.name} · {post.published_at?.slice(0,10)}</p>{post.cover_image_path&&<img src={`/storage/${post.cover_image_path}`} className="w-full max-h-[480px] object-cover rounded-2xl mt-8"/>}<p className="text-xl text-slate-600 mt-8">{post.excerpt}</p><MarkdownContent content={post.content} /><div className="surface p-7 mt-14 text-center"><h2 className="text-2xl font-bold">Punya cerita untuk dibagikan?</h2><p className="text-slate-600 mt-2">Bergabunglah dengan komunitas penulis BlogVerse.</p><div className="flex justify-center gap-3 mt-5"><Link href="/login" className="bg-blue-600 text-white rounded-lg px-5 py-3">Login</Link><Link href="/register" className="border rounded-lg px-5 py-3 flex gap-2"><UserPlus size={18}/>Daftar</Link></div></div></article></AppLayout>}

@@ -1,3 +1,110 @@
-import React,{useState,useEffect,useRef}from'react';import{Head,Link,router}from'@inertiajs/react';import axios from'axios';import AppLayout from'../../Layouts/AppLayout';import{Plus,MoreVertical,Eye,Edit3,Trash2,Download,Upload,Sparkles,LoaderCircle,FileText}from'lucide-react';import{Editor}from'@toast-ui/editor';import'@toast-ui/editor/dist/toastui-editor.css';
-function ArticleForm({onClose,categories,post=null}){const editorHost=useRef(null);const editor=useRef(null);const[form,setForm]=useState({title:post?.title||'',category:post?.category||categories[0],excerpt:post?.excerpt||'',content:post?.content||'',is_published:post?.is_published||false});const[busy,setBusy]=useState(false);useEffect(()=>{if(editorHost.current&&!editor.current){editor.current=new Editor({el:editorHost.current,height:'420px',initialEditType:'markdown',previewStyle:'vertical',initialValue:form.content,usageStatistics:false});editor.current.on('change',()=>setForm(v=>({...v,content:editor.current.getMarkdown()})));}return()=>{editor.current?.destroy();editor.current=null}},[]);return <div className="fixed inset-0 z-50 bg-slate-950/60 overflow-y-auto"><div className="min-h-full bg-white flex flex-col"><header className="bg-slate-900 text-white px-6 py-5 flex justify-between"><div><h2 className="text-xl font-bold">{post?'Ubah artikel':'Artikel baru'}</h2><p className="text-slate-300 text-sm">Tulis dan atur publikasi artikel.</p></div><button onClick={onClose}>✕</button></header><form id="article-editor-form" className="flex-1 p-6 max-w-5xl w-full mx-auto" onSubmit={e=>{e.preventDefault();setBusy(true);router[post?'put':'post'](post?`/dashboard/posts/${post.id}`:'/dashboard/posts',form,{onFinish:()=>setBusy(false),onSuccess:onClose})}}><label className="block font-semibold">Judul<input required maxLength="255" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} className="w-full border p-3 rounded-lg mt-2"/></label><div className="grid md:grid-cols-2 gap-4 mt-4"><label className="font-semibold">Kategori<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} className="w-full border p-3 rounded-lg mt-2">{categories.map(c=><option key={c}>{c}</option>)}</select></label><label className="font-semibold">Ringkasan<input value={form.excerpt} onChange={e=>setForm({...form,excerpt:e.target.value})} className="w-full border p-3 rounded-lg mt-2"/></label></div><label className="block font-semibold mt-5">Konten Markdown<div ref={editorHost} className="mt-2"/><input type="hidden" required value={form.content} readOnly/></label><label className="flex gap-2 mt-4"><input type="checkbox" checked={form.is_published} onChange={e=>setForm({...form,is_published:e.target.checked})}/>Publikasikan langsung</label></form><footer className="bg-slate-100 border-t p-5 flex justify-end gap-3"><button onClick={onClose} className="px-5 py-3 border rounded-lg">Batal</button><button type="submit" form="article-editor-form" disabled={busy} className="px-6 py-3 rounded-lg bg-blue-600 text-white font-bold">{busy?'Menyimpan...':'Simpan artikel'}</button></footer></div></div>}
-export default function Index({posts,stats,categories}){const[modal,setModal]=useState(null);const[menu,setMenu]=useState(null);const[aiPrompt,setAiPrompt]=useState('');const[aiCount,setAiCount]=useState(1);const[aiItems,setAiItems]=useState([]);const[busy,setBusy]=useState(false);const[error,setError]=useState('');async function generate(){setBusy(true);setError('');try{const r=await axios.post('/dashboard/posts/ai-generate',{prompt:aiPrompt,count:aiCount});setAiItems(r.data.articles)}catch(e){setError(e.response?.data?.message||'Gagal menghasilkan artikel. Periksa API key OpenAI.')}finally{setBusy(false)}}return <AppLayout><Head title="Dashboard Penulis"/><div className="page-shell"><div className="flex flex-wrap justify-between items-center gap-4"><div><p className="text-blue-600 text-xs font-bold tracking-widest">DASHBOARD PENULIS</p><h1 className="text-3xl font-bold mt-1">Artikel saya</h1><p className="text-slate-500 mt-1">Kelola semua tulisan dalam satu tempat.</p></div><button onClick={()=>setModal({})} className="bg-blue-600 text-white px-5 py-3 rounded-xl font-bold flex gap-2"><Plus/>Artikel baru</button></div><div className="grid sm:grid-cols-3 gap-4 mt-8">{[['Total Artikel',stats.total],['Dipublikasikan',stats.published],['Belum Selesai',stats.draft]].map(([l,v])=><div className="surface p-5" key={l}><p className="text-slate-500 text-sm">{l}</p><p className="text-3xl font-bold mt-2">{v}</p></div>)}</div><section className="surface p-5 mt-6"><div className="flex items-center gap-2 font-bold"><Sparkles className="text-violet-600"/>AI Article Generator</div><p className="text-sm text-slate-500 mt-1">Buat draft artikel berbahasa Indonesia dengan OpenAI.</p><div className="grid md:grid-cols-[1fr_110px_auto] gap-3 mt-4"><input value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} placeholder="Topik artikel yang ingin dibuat..." className="border rounded-lg p-3"/><input type="number" min="1" max="5" value={aiCount} onChange={e=>setAiCount(Math.max(1,Math.min(5,Number(e.target.value))))} className="border rounded-lg p-3"/><button onClick={generate} disabled={busy||!aiPrompt.trim()} className="bg-violet-600 text-white rounded-lg px-5 py-3 font-bold">{busy?<LoaderCircle className="animate-spin"/>:'Generate'}</button></div>{error&&<p className="text-rose-600 mt-3">{error}</p>}{aiItems.length>0&&<div className="mt-4 space-y-3">{aiItems.map((a,i)=><div className="border rounded-lg p-3" key={i}><b>{a.title}</b><p className="text-sm text-slate-500">{a.category}</p></div>)}<button onClick={()=>router.post('/dashboard/posts/ai-save',{articles:aiItems},{onSuccess:()=>setAiItems([])})} className="bg-emerald-600 text-white rounded-lg px-4 py-2">Simpan semua sebagai draft</button></div>}</section><div className="flex flex-wrap gap-3 mt-6"><a href="/dashboard/posts/export" className="border bg-white rounded-lg px-4 py-2 flex gap-2"><Download size={17}/>Export Excel</a><form action="/dashboard/posts/import" method="post" encType="multipart/form-data" className="border bg-white rounded-lg px-4 py-2 flex gap-2"><input type="hidden" name="_token" value={document.querySelector('meta[name=csrf-token]')?.content}/><label className="flex gap-2 items-center"><Upload size={17}/>Import Excel<input type="file" name="file" accept=".xlsx,.xls" required className="max-w-40"/></label><button className="text-blue-700 font-bold">Kirim</button></form></div><section className="surface mt-5 overflow-visible"><div className="p-5 border-b font-bold">Daftar artikel</div><div className="divide-y">{posts.data.map(p=><div key={p.id} className="px-5 py-4 flex items-center gap-4"><FileText className="text-blue-600 shrink-0"/><div className="min-w-0 flex-1"><p className="font-bold truncate">{p.title}</p><p className="text-xs text-slate-500 mt-1">{p.category} · {p.is_published?'Dipublikasikan':'Draf'}</p></div><button onClick={()=>router.patch(`/dashboard/posts/${p.id}/publish`)} className={`text-xs rounded-full px-3 py-1 ${p.is_published?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}`}>{p.is_published?'Jadikan Draf':'Publikasikan'}</button><div className="relative"><button onClick={()=>setMenu(menu===p.id?null:p.id)} className="p-2"><MoreVertical/></button>{menu===p.id&&<div className="absolute right-0 z-20 bg-white border shadow-xl rounded-lg w-40 p-1"><Link href={`/dashboard/posts/${p.id}`} className="block p-2 text-sm">Detail</Link><button onClick={()=>{setModal(p);setMenu(null)}} className="block p-2 text-sm w-full text-left">Ubah Edit</button><button onClick={()=>confirm('Hapus artikel ini?')&&router.delete(`/dashboard/posts/${p.id}`)} className="block p-2 text-sm text-rose-600 w-full text-left">Hapus</button></div>}</div></div>)}</div><div className="p-4 flex justify-center gap-2">{posts.links.map((l,i)=><a key={i} href={l.url||'#'} className={`border rounded px-3 py-2 ${l.active?'bg-blue-600 text-white':''}`} dangerouslySetInnerHTML={{__html:l.label}}/>)}</div></section></div>{modal&&<ArticleForm post={modal.id?modal:null} categories={categories} onClose={()=>setModal(null)}/>}</AppLayout>}
+import { Head, Link, router } from '@inertiajs/react';
+import { useRef, useState } from 'react';
+import KebabMenu from '../../Components/KebabMenu';
+import { DownloadIcon, PlusIcon, SearchIcon, SparkIcon, UploadIcon } from '../../Components/Icons';
+import Modal from '../../Components/Modal';
+import Pagination from '../../Components/Pagination';
+import Spinner from '../../Components/Spinner';
+import AiGeneratorModal from '../../Components/AiGeneratorModal';
+import PostFormModal from '../../Components/PostFormModal';
+
+const StatCard = ({ label, value, tone }) => (
+    <div className={`rounded-xl border p-5 ${tone}`}>
+        <p className="text-sm">{label}</p>
+        <p className="mt-1 text-3xl font-bold">{value}</p>
+    </div>
+);
+
+export default function Index({ posts, stats, categories, filters }) {
+    const [search, setSearch] = useState(filters.search);
+    const [formOpen, setFormOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [aiOpen, setAiOpen] = useState(false);
+    const [deleting, setDeleting] = useState(null);
+    const [deleteBusy, setDeleteBusy] = useState(false);
+    const fileInput = useRef(null);
+
+    const openCreate = () => { setEditing(null); setFormOpen(true); };
+    const openEdit = (post) => { setEditing(post); setFormOpen(true); };
+
+    const confirmDelete = () => {
+        router.delete(`/dashboard/posts/${deleting.id}`, {
+            preserveScroll: true,
+            onStart: () => setDeleteBusy(true),
+            onFinish: () => { setDeleteBusy(false); setDeleting(null); },
+        });
+    };
+
+    const importFile = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        router.post('/dashboard/posts/import', { file }, { forceFormData: true, preserveScroll: true });
+        e.target.value = '';
+    };
+
+    return (
+        <div>
+            <Head title="Artikel Saya" />
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-2xl font-bold">Artikel Saya</h1>
+                <div className="flex flex-wrap gap-2">
+                    <a href="/dashboard/posts/export" className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-100"><DownloadIcon /> Ekspor Excel</a>
+                    <button type="button" onClick={() => fileInput.current.click()} className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-100"><UploadIcon /> Impor Excel</button>
+                    <input ref={fileInput} type="file" accept=".xlsx,.xls" className="hidden" onChange={importFile} />
+                    <button type="button" onClick={() => setAiOpen(true)} className="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"><SparkIcon /> Generate AI</button>
+                    <button type="button" onClick={openCreate} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"><PlusIcon /> Tambah Artikel</button>
+                </div>
+            </div>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-3">
+                <StatCard label="Total Artikel" value={stats.total} tone="border-indigo-200 bg-indigo-50 text-indigo-900" />
+                <StatCard label="Total Selesai" value={stats.published} tone="border-emerald-200 bg-emerald-50 text-emerald-900" />
+                <StatCard label="Belum Selesai" value={stats.draft} tone="border-amber-200 bg-amber-50 text-amber-900" />
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); router.get('/dashboard/posts', { search }, { preserveState: true }); }} className="mb-4 flex gap-2">
+                <div className="relative flex-1">
+                    <SearchIcon className="absolute left-3 top-3 text-slate-400" />
+                    <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari artikel saya..." className="w-full rounded-lg border border-slate-300 py-2.5 pl-10 pr-3" />
+                </div>
+                <button type="submit" className="rounded-lg bg-slate-800 px-5 text-white">Cari</button>
+            </form>
+
+            <ul className="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                {posts.data.length === 0 && <li className="p-10 text-center text-slate-500">Belum ada artikel.</li>}
+                {posts.data.map((p) => (
+                    <li key={p.id} className="flex items-center gap-3 px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                            <Link href={`/dashboard/posts/${p.id}`} className="block truncate font-medium hover:text-indigo-700">{p.title}</Link>
+                            <p className="mt-0.5 text-xs text-slate-500">{p.category} · {new Date(p.created_at).toLocaleDateString('id-ID')}</p>
+                        </div>
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${p.is_published ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{p.is_published ? 'Terbit' : 'Draf'}</span>
+                        <button type="button" onClick={() => router.patch(`/dashboard/posts/${p.id}/publish`, {}, { preserveScroll: true })} className="hidden rounded-md border border-slate-300 px-3 py-1 text-xs hover:bg-slate-100 sm:block">
+                            {p.is_published ? 'Jadikan Draf' : 'Publikasikan'}
+                        </button>
+                        <KebabMenu detailHref={`/dashboard/posts/${p.id}`} onEdit={() => openEdit(p)} onDelete={() => setDeleting(p)} />
+                    </li>
+                ))}
+            </ul>
+            <Pagination links={posts.links} />
+
+            <PostFormModal open={formOpen} post={editing} categories={categories} onClose={() => setFormOpen(false)} />
+            <AiGeneratorModal open={aiOpen} categories={categories} onClose={() => setAiOpen(false)} />
+            <Modal
+                open={Boolean(deleting)}
+                tone="red"
+                fullScreen={false}
+                title="Hapus Artikel"
+                onClose={() => setDeleting(null)}
+                footer={
+                    <>
+                        <button type="button" onClick={() => setDeleting(null)} className="rounded-lg border border-slate-300 bg-white px-5 py-2 hover:bg-slate-100">Batal</button>
+                        <button type="button" onClick={confirmDelete} disabled={deleteBusy} className="flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2 font-medium text-white hover:bg-red-700">{deleteBusy && <Spinner />} Hapus</button>
+                    </>
+                }
+            >
+                <p>Yakin ingin menghapus <strong>{deleting?.title}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
+            </Modal>
+        </div>
+    );
+}

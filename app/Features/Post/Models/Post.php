@@ -1,4 +1,48 @@
 <?php
+
 namespace App\Features\Post\Models;
-use App\Models\User; use Illuminate\Database\Eloquent\Model; use Illuminate\Database\Eloquent\Factories\HasFactory; use Illuminate\Database\Eloquent\Relations\BelongsTo; use Illuminate\Support\Str;
-class Post extends Model { use HasFactory; protected $fillable=['user_id','title','slug','category','excerpt','content','cover_image_path','is_published','published_at']; protected function casts(): array { return ['is_published'=>'boolean','published_at'=>'datetime']; } public function user(): BelongsTo { return $this->belongsTo(User::class); } protected static function booted(): void { static::creating(function(Post $post){ if(blank($post->slug)) $post->slug=static::uniqueSlug($post->title); }); static::updating(function(Post $post){ if($post->isDirty('title') && !$post->isDirty('slug')) $post->slug=static::uniqueSlug($post->title,$post->id); }); static::saving(function(Post $post){ if($post->is_published && !$post->published_at) $post->published_at=now(); if(!$post->is_published) $post->published_at=null; }); } public static function uniqueSlug(string $title,?int $ignoreId=null): string { $base=Str::slug($title) ?: 'artikel'; $slug=$base; $n=2; while(static::query()->where('slug',$slug)->when($ignoreId,fn($q)=>$q->whereKeyNot($ignoreId))->exists()) $slug=$base.'-'.$n++; return $slug; } public function scopePublished($query){return $query->where('is_published',true)->whereNotNull('published_at')->where('published_at','<=',now());} }
+
+use App\Models\User;
+use Database\Factories\PostFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
+
+class Post extends Model
+{
+    /** @use HasFactory<PostFactory> */
+    use HasFactory;
+
+    protected $fillable = [
+        'user_id', 'title', 'slug', 'category', 'excerpt', 'content',
+        'cover_image_path', 'is_published', 'published_at',
+    ];
+
+    protected $appends = ['cover_url'];
+
+    protected function casts(): array
+    {
+        return [
+            'is_published' => 'boolean',
+            'published_at' => 'datetime',
+        ];
+    }
+
+    protected static function newFactory(): PostFactory
+    {
+        return PostFactory::new();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function getCoverUrlAttribute(): ?string
+    {
+        return $this->cover_image_path
+            ? Storage::disk('public')->url($this->cover_image_path)
+            : null;
+    }
+}

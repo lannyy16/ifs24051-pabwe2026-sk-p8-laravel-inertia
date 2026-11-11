@@ -1,2 +1,38 @@
-import React from'react';import{Head,Link,useForm}from'@inertiajs/react';import AppLayout from'../../Layouts/AppLayout';
-export default function Register(){const{data,setData,post,processing,errors}=useForm({name:'',email:'',password:'',password_confirmation:''});return <AppLayout><Head title="Register"/><div className="min-h-[75vh] flex items-center justify-center p-5"><form onSubmit={e=>{e.preventDefault();post('/register')}} className="surface p-8 w-full max-w-md"><h1 className="text-3xl font-bold">Buat akun penulis</h1><p className="text-slate-500 mt-2">Mulai bagikan ide dan pengetahuanmu.</p>{[['name','Nama lengkap','text'],['email','Email','email'],['password','Password','password'],['password_confirmation','Konfirmasi password','password']].map(([key,label,type])=><label key={key} className="block mt-4 text-sm font-semibold">{label}<input type={type} value={data[key]} onChange={e=>setData(key,e.target.value)} className="w-full border rounded-lg p-3 mt-2" required/>{errors[key]&&<span className="text-rose-600">{errors[key]}</span>}</label>)}<button disabled={processing} className="w-full mt-6 bg-blue-600 text-white rounded-lg p-3 font-bold">{processing?'Mendaftar...':'Daftar'}</button><p className="text-center mt-5 text-sm">Sudah punya akun? <Link href="/login" className="text-blue-700 font-bold">Login</Link></p></form></div></AppLayout>}
+import { Head, Link, useForm } from '@inertiajs/react';
+import Spinner from '../../Components/Spinner';
+
+const Field = ({ id, label, type = 'text', value, onChange, error }) => (
+    <div>
+        <label htmlFor={id} className="mb-1 block text-sm font-medium">{label}</label>
+        <input id={id} type={type} value={value} onChange={onChange} className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none" />
+        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+    </div>
+);
+
+export default function Register() {
+    const { data, setData, post, processing, errors } = useForm({ name: '', username: '', email: '', password: '', password_confirmation: '' });
+
+    const submit = (e) => {
+        e.preventDefault();
+        post('/register');
+    };
+
+    return (
+        <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+            <Head title="Daftar" />
+            <h1 className="text-2xl font-bold">Daftar Penulis</h1>
+            <p className="mt-1 text-sm text-slate-500">Bergabung dan mulai menerbitkan artikel Anda.</p>
+            <form onSubmit={submit} className="mt-6 space-y-4">
+                <Field id="register-name" label="Nama lengkap" value={data.name} onChange={(e) => setData('name', e.target.value)} error={errors.name} />
+                <Field id="register-username" label="Username" value={data.username} onChange={(e) => setData('username', e.target.value)} error={errors.username} />
+                <Field id="register-email" label="Email" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} error={errors.email} />
+                <Field id="register-password" label="Password" type="password" value={data.password} onChange={(e) => setData('password', e.target.value)} error={errors.password} />
+                <Field id="register-password-confirmation" label="Konfirmasi password" type="password" value={data.password_confirmation} onChange={(e) => setData('password_confirmation', e.target.value)} />
+                <button id="register-submit" type="submit" disabled={processing} className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2.5 font-medium text-white hover:bg-indigo-700">
+                    {processing && <Spinner />} Daftar
+                </button>
+            </form>
+            <p className="mt-6 text-center text-sm text-slate-500">Sudah punya akun? <Link href="/login" className="font-medium text-indigo-600">Masuk</Link></p>
+        </div>
+    );
+}

@@ -1,4 +1,93 @@
 <?php
+
 namespace App\Features\Post\Services;
-use App\Features\Post\Models\Post; use Illuminate\Support\Collection; use PhpOffice\PhpSpreadsheet\Spreadsheet; use PhpOffice\PhpSpreadsheet\Writer\Xlsx; use PhpOffice\PhpSpreadsheet\IOFactory; use Illuminate\Support\Facades\Validator; use Illuminate\Validation\ValidationException;
-class PostExcelService { public function export(iterable $posts):string{$book=new Spreadsheet();$sheet=$book->getActiveSheet();$sheet->fromArray(['title','category','excerpt','content','is_published','published_at'],null,'A1');$row=2;foreach($posts as $post){$sheet->fromArray([$post->title,$post->category,$post->excerpt,$post->content,$post->is_published?1:0,$post->published_at?->toDateTimeString()],null,'A'.$row++);} $path=tempnam(sys_get_temp_dir(),'blog-export-').'.xlsx';(new Xlsx($book))->save($path);return $path;} public function import(string $path,int $userId):int{$sheet=IOFactory::load($path)->getActiveSheet();$rows=$sheet->toArray();$header=array_map(fn($v)=>strtolower(trim((string)$v)),array_shift($rows)??[]);$count=0;foreach($rows as $row){$normalizedRow=array_slice(array_pad($row,count($header),null),0,count($header));$data=count($header)>0?array_combine($header,$normalizedRow):false;if(!$data||blank($data['title']??null)||blank($data['content']??null))continue;Validator::make($data,['title'=>'required|string|max:255','category'=>'required|in:'.implode(',',\App\Features\Post\Enums\PostCategory::values()),'content'=>'required|string','is_published'=>'nullable|boolean'])->validate();Post::create(['user_id'=>$userId,'title'=>$data['title'],'category'=>$data['category'],'excerpt'=>$data['excerpt']??null,'content'=>$data['content'],'is_published'=>(bool)($data['is_published']??false),'published_at'=>!empty($data['is_published'])?now():null]);$count++;}return $count;} }
+
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+class PostExcelService
+{
+    public const HEADERS = ['Judul', 'Kategori', 'Ringkasan', 'Isi', 'Status'];
+
+    public const ADMIN_HEADERS = ['Penulis', 'Username', 'Judul', 'Kategori', 'Ringkasan', 'Isi', 'Status', 'Dibuat'];
+
+    public function __construct(private readonly PostService $posts) {}
+
+    /** Hasilkan berkas .xlsx sementara dan kembalikan path-nya. */
+    public function export(Collection $posts, bool $withAuthor = false): string
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Artikel');
+
+        $headers = $withAuthor ? self::ADMIN_HEADERS : self::HEADERS;
+        $sheet->fromArray($headers, null, 'A1');
+
+        $row = 2;
+        foreach ($posts as $post) {
+            $status = $post->is_published ? 'Published' : 'Draft';
+            $values = $withAuthor
+                ? [
+                    $post->user->name, $post->user->username, $post->title, $post->category,
+                    $post->excerpt, $post->content, $status, $post->created_at?->format('Y-m-d H:i'),
+                ]
+                : [$post->title, $post->category, $post->excerpt, $post->content, $status];
+
+            $sheet->fromArray($values, null, 'A'.$row++);
+        }
+
+        $lastColumn = chr(64 + count($headers));
+        $sheet->getStyle("A1:{$lastColumn}1")->getFont()->setBold(true);
+        $sheet->getStyle("A1:{$lastColumn}1")->getFill()
+            ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('E0E7FF');
+
+        foreach (range('A', $lastColumn) as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'posts_').'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        return $path;
+    }
+
+    /**
+     * Impor artikel dari Excel. Baris pertama adalah header.
+     *
+     * @return array{imported: int, skipped: int}
+     */
+    public function import(User $user, UploadedFile $file): array
+    {
+        $rows = IOFactory::load($file->getRealPath())->getActiveSheet()->toArray(null, true, true, false);
+        array_shift($rows);
+
+        $items = [];
+        $skipped = 0;
+
+        foreach ($rows as $row) {
+            $title = trim((string) ($row[0] ?? ''));
+            $content = trim((string) ($row[3] ?? ''));
+
+            if ($title === '' || $content === '') {
+                $skipped++;
+
+                continue;
+            }
+
+            $items[] = [
+                'title' => $title,
+                'category' => trim((string) ($row[1] ?? '')),
+                'excerpt' => trim((string) ($row[2] ?? '')) ?: null,
+                'content' => $content,
+                'is_published' => in_array(strtolower(trim((string) ($row[4] ?? ''))), ['published', 'terbit', 'ya', '1'], true),
+            ];
+        }
+
+        return ['imported' => $this->posts->createMany($user, $items), 'skipped' => $skipped];
+    }
+}

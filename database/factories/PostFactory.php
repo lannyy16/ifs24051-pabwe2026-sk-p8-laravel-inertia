@@ -1,3 +1,45 @@
 <?php
-namespace Database\Factories;use Illuminate\Database\Eloquent\Factories\Factory;use App\Features\Post\Models\Post;use App\Features\Post\Enums\PostCategory;
-class PostFactory extends Factory {protected $model=Post::class;public function definition():array{$published=fake()->boolean();return ['title'=>fake()->sentence(6),'category'=>fake()->randomElement(PostCategory::values()),'excerpt'=>fake()->paragraph(),'content'=>"# ".fake()->sentence()."\n\n".fake()->paragraphs(3,true),'is_published'=>$published,'published_at'=>$published?now():null];}}
+
+namespace Database\Factories;
+
+use App\Features\Post\Enums\PostCategory;
+use App\Features\Post\Models\Post;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
+
+/** @extends Factory<Post> */
+class PostFactory extends Factory
+{
+    protected $model = Post::class;
+
+    public function definition(): array
+    {
+        $title = fake()->unique()->sentence(4);
+
+        return [
+            'user_id' => User::factory(),
+            'title' => $title,
+            'slug' => Str::slug($title).'-'.fake()->unique()->numberBetween(1000, 999999),
+            'category' => fake()->randomElement(PostCategory::values()),
+            'excerpt' => fake()->sentence(10),
+            'content' => "## ".fake()->sentence(3)."\n\n".fake()->paragraph(4),
+            'cover_image_path' => null,
+            'is_published' => false,
+            'published_at' => null,
+        ];
+    }
+
+    public function published(): static
+    {
+        return $this->state(fn () => [
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+    }
+
+    public function draft(): static
+    {
+        return $this->state(fn () => ['is_published' => false, 'published_at' => null]);
+    }
+}
