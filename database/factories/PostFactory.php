@@ -23,7 +23,7 @@ class PostFactory extends Factory
             'slug' => Str::slug($title).'-'.fake()->unique()->numberBetween(1000, 999999),
             'category' => fake()->randomElement(PostCategory::values()),
             'excerpt' => fake()->sentence(10),
-            'content' => "## ".fake()->sentence(3)."\n\n".fake()->paragraph(4),
+            'content' => '## '.fake()->sentence(3)."\n\n".fake()->paragraph(4),
             'cover_image_path' => null,
             'is_published' => false,
             'published_at' => null,

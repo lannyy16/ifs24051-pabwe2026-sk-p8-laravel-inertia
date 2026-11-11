@@ -1,23 +1,59 @@
-import Editor from '@toast-ui/editor';
-import '@toast-ui/editor/dist/toastui-editor.css';
+
 import { useEffect, useRef } from 'react';
 
-/** TOAST UI Editor (Markdown). `value` hanya dipakai sebagai nilai awal. */
-export default function MarkdownEditor({ value = '', onChange, height = '420px' }) {
+/** TOAST UI Editor (Markdown), dimuat hanya ketika komponen digunakan. */
+export default function MarkdownEditor({
+    value = '',
+    onChange,
+    height = '420px',
+}) {
     const el = useRef(null);
+    const editorRef = useRef(null);
+    const valueRef = useRef(value);
+    const onChangeRef = useRef(onChange);
+
+    // Selalu gunakan nilai dan callback terbaru.
+    valueRef.current = value;
+    onChangeRef.current = onChange;
 
     useEffect(() => {
-        const editor = new Editor({
-            el: el.current,
-            height,
-            initialEditType: 'markdown',
-            previewStyle: 'vertical',
-            initialValue: value,
-            usageStatistics: false,
-            events: { change: () => onChange?.(editor.getMarkdown()) },
+        let cancelled = false;
+        let editor = null;
+
+        const initializeEditor = async () => {
+            const [{ default: Editor }] = await Promise.all([
+                import('@toast-ui/editor'),
+                import('@toast-ui/editor/dist/toastui-editor.css'),
+            ]);
+
+            if (cancelled || !el.current) return;
+
+            editor = new Editor({
+                el: el.current,
+                height,
+                initialEditType: 'markdown',
+                previewStyle: 'vertical',
+                initialValue: valueRef.current,
+                usageStatistics: false,
+                events: {
+                    change: () => {
+                        onChangeRef.current?.(editor.getMarkdown());
+                    },
+                },
+            });
+
+            editorRef.current = editor;
+        };
+
+        initializeEditor().catch((error) => {
+            console.error('Gagal memuat Markdown Editor:', error);
         });
-        return () => editor.destroy();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        return () => {
+            cancelled = true;
+            editor?.destroy();
+            editorRef.current = null;
+        };
     }, []);
 
     return <div ref={el} />;
