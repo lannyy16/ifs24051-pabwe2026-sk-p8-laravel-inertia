@@ -1,29 +1,24 @@
 {
-  "name": "ifs24051-pabwe2026-sk-p8-laravel-inertia",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite"
-  },
-  "dependencies": {
-    "@inertiajs/react": "^2.0.0",
-    "@toast-ui/editor": "^3.2.2",
-    "axios": "^1.7.9",
-    "lucide-react": "^0.468.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.1.11",
-    "@vitejs/plugin-react": "^5.0.0",
-    "laravel-vite-plugin": "^2.1.0",
-    "tailwindcss": "^4.1.11",
-    "vite": "^7.3.8"
-  },
-  "overrides": {
-    "@toast-ui/editor": {
-      "dompurify": "^3.4.17"
+    "name": "ifs24051-pabwe2026-sk-p8-laravel-inertia",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "dependencies": {
+        "@inertiajs/react": "^2.0.0",
+        "@toast-ui/editor": "^3.2.2",
+        "axios": "^1.7.9",
+        "lucide-react": "^0.468.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.1.11",
+        "@vitejs/plugin-react": "^5.0.0",
+        "laravel-vite-plugin": "^2.1.0",
+        "tailwindcss": "^4.1.11",
+        "vite": "^7.3.8"
     }
-  }
 }

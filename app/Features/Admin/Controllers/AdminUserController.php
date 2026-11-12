@@ -1,21 +1,4 @@
 <?php
-
 namespace App\Features\Admin\Controllers;
-
-use App\Features\Admin\Services\AdminUserService;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
-
-class AdminUserController
-{
-    public function __construct(private readonly AdminUserService $users) {}
-
-    public function index(Request $request): Response
-    {
-        return Inertia::render('Admin/UserList', [
-            'users' => $this->users->list($request->query('search')),
-            'filters' => ['search' => $request->query('search', '')],
-        ]);
-    }
-}
+use App\Http\Controllers\Controller;use App\Features\Admin\Services\AdminUserService;use App\Features\Post\Models\Post;use App\Features\Post\Services\PostExcelService;use App\Models\User;use Inertia\Inertia;
+class AdminUserController extends Controller { public function index(AdminUserService $s){return Inertia::render('Admin/UserList',['users'=>$s->users()]);} public function posts(User $user){return Inertia::render('Admin/UserPostList',['user'=>$user->only('id','name','email'),'posts'=>$user->posts()->latest()->paginate(10)]);} public function exportUser(User $user,PostExcelService $excel){$path=$excel->export($user->posts()->get());return response()->download($path,'artikel-'.$user->id.'.xlsx')->deleteFileAfterSend();} public function allPosts(){return Inertia::render('Admin/PostList',['posts'=>Post::with('user:id,name')->latest()->paginate(15)]);} public function exportAll(PostExcelService $excel){$path=$excel->export(Post::with('user')->get());return response()->download($path,'semua-artikel.xlsx')->deleteFileAfterSend();} }
