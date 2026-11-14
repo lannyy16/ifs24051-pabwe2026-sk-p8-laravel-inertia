@@ -20,6 +20,8 @@
 
     <meta name="theme-color" content="#ffffff">
 
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
     <title inertia>
         {{ config('app.name', 'BlogVerse Pro') }}
     </title>

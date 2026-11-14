@@ -22,5 +22,14 @@ export default defineConfig({
         manifest: true,
         assetsDir: 'assets',
         sourcemap: false,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return;
+                    if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react-vendor';
+                    if (/node_modules\/@inertiajs\//.test(id)) return 'inertia-vendor';
+                },
+            },
+        },
     },
 });
