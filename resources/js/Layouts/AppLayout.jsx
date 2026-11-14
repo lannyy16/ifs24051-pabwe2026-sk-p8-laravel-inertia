@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import {
@@ -49,11 +48,9 @@ export default function AppLayout({ children, publicPage = false }) {
 
             {/* Header Landmark */}
             <header
-                role="banner"
                 className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur"
             >
                 <nav
-                    role="navigation"
                     aria-label="Navigasi utama"
                     className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5"
                 >
@@ -64,7 +61,7 @@ export default function AppLayout({ children, publicPage = false }) {
                         className="flex items-center gap-2 text-xl font-bold text-blue-700"
                     >
                         <BookOpen aria-hidden="true" />
-                        <span aria-hidden="true">BlogVerse Pro</span>
+                        <span>BlogVerse Pro</span>
                     </Link>
 
                     {/* Menu */}
@@ -143,7 +140,6 @@ export default function AppLayout({ children, publicPage = false }) {
             {/* Main Content Landmark */}
             <main
                 id="main-content"
-                role="main"
                 className="flex-1"
                 tabIndex="-1"
             >
@@ -164,7 +160,6 @@ export default function AppLayout({ children, publicPage = false }) {
 
             {/* Footer Landmark */}
             <footer
-                role="contentinfo"
                 className="mt-16 border-t border-slate-200 bg-white"
             >
                 <div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-4 px-5 py-8 text-sm text-slate-500">
@@ -174,7 +169,6 @@ export default function AppLayout({ children, publicPage = false }) {
                     </p>
 
                     <nav
-                        role="navigation"
                         aria-label="Navigasi footer"
                         className="flex gap-5"
                     >
